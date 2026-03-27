@@ -304,7 +304,7 @@
             localStorage.setItem('habits', JSON.stringify(habits));
         }
         
-                       function renderStats() {
+          function renderStats() {
             const today = getToday();
             let completedToday = 0, totalDueToday = 0;
             habits.forEach(h => {
@@ -316,13 +316,14 @@
             const percentage = totalDueToday > 0 ? Math.round((completedToday / totalDueToday) * 100) : 0;
             
             const statsHTML = `
-                <!-- TODAY + PERCENTAGE in one bar -->
-                <div class="bg-zinc-900 rounded-3xl p-5 flex items-center justify-between">
+                <!-- TODAY - compact single bar -->
+                <div class="bg-zinc-900 rounded-3xl p-6 flex items-center justify-between">
                     <div>
                         <div class="text-emerald-400 text-sm font-medium">TODAY</div>
                         <div class="text-5xl font-semibold">${completedToday}/${totalDueToday}</div>
                         <div class="text-zinc-400">habits completed</div>
                     </div>
+                    
                     <div class="relative w-20 h-20 flex items-center justify-center">
                         <svg class="w-20 h-20 -rotate-12" viewBox="0 0 42 42">
                             <circle cx="21" cy="21" r="15" fill="none" stroke="#27272a" stroke-width="6"></circle>
@@ -335,24 +336,24 @@
                     </div>
                 </div>
 
-                <!-- THIS WEEK bar -->
-                <div class="bg-zinc-900 rounded-3xl p-5">
+                <!-- LONGEST STREAK - separate bar -->
+                <div class="bg-zinc-900 rounded-3xl p-6 text-center">
+                    <div class="text-zinc-400 text-sm mb-1">LONGEST STREAK</div>
+                    <div class="text-5xl font-semibold">${Math.max(...habits.map(h => calculateStreak(h)), 0)}</div>
+                    <div class="text-emerald-400 text-xs mt-1 flex items-center justify-center gap-x-1">
+                        <i class="fa-solid fa-fire"></i>
+                        days in a row
+                    </div>
+                </div>
+
+                <!-- THIS WEEK - separate bar -->
+                <div class="bg-zinc-900 rounded-3xl p-6">
                     <div class="text-zinc-400 text-sm mb-3">THIS WEEK</div>
                     <div class="flex gap-x-2">
                         ${getLastNDays(7).map(date => {
                             const count = habits.filter(h => isDueToday(h) && isCompleted(h, date)).length;
                             return `<div class="flex-1 h-16 rounded-2xl flex items-end justify-center text-xs font-medium" style="background: linear-gradient(to top, #10b981 ${count > 0 ? '100%' : '20%'}, #27272a 100%)">${count}</div>`;
                         }).join('')}
-                    </div>
-                </div>
-
-                <!-- LONGEST STREAK bar -->
-                <div class="bg-zinc-900 rounded-3xl p-5 text-center">
-                    <div class="text-zinc-400 text-sm mb-1">LONGEST STREAK</div>
-                    <div class="text-5xl font-semibold">${Math.max(...habits.map(h => calculateStreak(h)), 0)}</div>
-                    <div class="text-emerald-400 text-xs mt-1 flex items-center justify-center gap-x-1">
-                        <i class="fa-solid fa-fire"></i>
-                        days in a row
                     </div>
                 </div>
             `;
