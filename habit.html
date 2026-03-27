@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HabitFlow • Tracker</title>
+	    <!-- PWA Support -->
+    <meta name="theme-color" content="#10b981">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="HabitFlow">
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22HabitFlow%22%2C%22short_name%22%3A%22HabitFlow%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%2309090b%22%2C%22theme_color%22%3A%22%2310b981%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20100%20100%27%3E%253Ctext%20y%3D%2770%27%20font-size%3D%2780%27%3E%F0%9F%94%A5%253C%2Ftext%3E%253C%2Fsvg%3E%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fsvg%22%7D%5D%7D">
+    
+    <!-- Apple home screen icon -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='70' font-size='80'%3E🔥%3C/text%3E%3C/svg%3E">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap');
+        
+        :root {
+            --tw-color-primary: #10b981;
+        }
+        
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+        
+        .habit-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 1rem; /* much more compact */
+        }
+        
+        .habit-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgb(16 185 129 / 0.1);
+        }
+        
+        .modal {
+            animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        @keyframes modalPop {
+            0% { transform: scale(0.95); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .day-toggle {
+            transition: all 0.2s ease;
+        }
+        
+        .day-toggle.active {
+            background-color: #10b981;
+            color: white;
+            border-color: #10b981;
+        }
+        
+        .target-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .target-btn.active {
+            background-color: #10b981;
+            color: white;
+            border-color: #10b981;
+        }
+        
+        .heatmap-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen">
+    <!-- HEADER -->
+    <div class="max-w-5xl mx-auto px-4 py-6 md:px-6 md:py-8">
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-x-3">
+                <div class="w-9 h-9 bg-emerald-500 rounded-2xl flex items-center justify-center text-white text-2xl shadow-inner">🔥</div>
+                <h1 class="text-4xl font-semibold tracking-tight">HabitFlow</h1>
+            </div>
+            
+            <div class="flex items-center gap-x-4">
+                <div id="today-date" class="text-sm font-medium bg-zinc-900 text-zinc-400 px-5 py-2.5 rounded-3xl flex items-center gap-x-2">
+                    <i class="fa-solid fa-calendar"></i>
+                    <span id="date-text"></span>
+                </div>
+                
+                <button onclick="clearAllData()" 
+                        class="flex items-center gap-x-2 text-zinc-400 hover:text-red-400 transition-colors text-sm font-medium">
+                    <i class="fa-solid fa-trash"></i>
+                    <span>Reset</span>
+                </button>
+                
+                <button onclick="showAddModal()" 
+                        class="flex items-center gap-x-3 bg-emerald-500 hover:bg-emerald-600 transition-colors text-white font-semibold px-6 py-3 rounded-3xl shadow-lg shadow-emerald-500/30">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>New Habit</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- STATS BAR -->
+        <div class="grid grid-cols-3 gap-4 mb-10" id="stats">
+            <!-- Populated by JS -->
+        </div>
+
+        <!-- HABITS LIST -->
+        <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-xl font-semibold">Your Habits</h2>
+            <div onclick="showHistoryModal()" class="text-emerald-400 hover:text-emerald-300 text-sm font-medium cursor-pointer flex items-center gap-x-1">
+                <i class="fa-solid fa-chart-line"></i>
+                <span>Full History</span>
+            </div>
+        </div>
+
+        <div id="habits-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Habit cards populated by JS -->
+        </div>
+
+        <!-- EMPTY STATE -->
+        <div id="empty-state" class="hidden text-center py-16">
+            <div class="text-7xl mb-6">🌱</div>
+            <h3 class="text-2xl font-medium mb-2">No habits yet</h3>
+            <p class="text-zinc-400 mb-8 max-w-xs mx-auto">Start building your streak. Add your first habit above.</p>
+            <button onclick="showAddModal()" 
+                    class="bg-white text-zinc-900 font-semibold px-8 py-4 rounded-3xl inline-flex items-center gap-x-3 hover:scale-105 transition">
+                <i class="fa-solid fa-plus"></i>
+                Add your first habit
+            </button>
+        </div>
+    </div>
+
+    <!-- HABIT MODAL (Add + Edit) -->
+    <div id="habit-modal" onclick="if(event.target===this)hideHabitModal()" 
+         class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+        <div class="bg-zinc-900 rounded-3xl p-8 w-full max-w-md modal">
+            <h3 id="modal-title" class="text-2xl font-semibold mb-6">Create a new habit</h3>
+            
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-zinc-400 mb-2">Habit name (you can add emoji!)</label>
+                    <input id="habit-name-input" 
+                           type="text" 
+                           placeholder="e.g. 🏃 Run 5km or ☕ No coffee after 3pm"
+                           class="w-full bg-zinc-800 border border-zinc-700 focus:border-emerald-500 rounded-2xl px-5 py-4 text-lg outline-none">
+                </div>
+
+                <!-- FREQUENCY SECTION -->
+                <div>
+                    <label class="block text-sm font-medium text-zinc-400 mb-3">How often?</label>
+                    
+                    <div class="flex gap-x-2 mb-4" id="frequency-type">
+                        <button onclick="setFrequencyType('daily')" 
+                                id="freq-daily"
+                                class="flex-1 py-3 px-5 rounded-2xl font-medium border border-emerald-500 text-emerald-500">Every day</button>
+                        <button onclick="setFrequencyType('scheduled')" 
+                                id="freq-scheduled"
+                                class="flex-1 py-3 px-5 rounded-2xl font-medium border border-zinc-700 hover:border-zinc-500">Specific days</button>
+                        <button onclick="setFrequencyType('flexible')" 
+                                id="freq-flexible"
+                                class="flex-1 py-3 px-5 rounded-2xl font-medium border border-zinc-700 hover:border-zinc-500">X days / week</button>
+                    </div>
+
+                    <div id="daily-desc" class="text-xs text-zinc-400 mb-4">
+                        You’ll be able to mark this habit every single day.
+                    </div>
+
+                    <div id="scheduled-picker" class="hidden">
+                        <div class="grid grid-cols-7 gap-2 text-center text-xs font-medium">
+                            <div onclick="toggleDay(0)" id="day-0" class="day-toggle cursor-pointer bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-xl py-3">Su</div>
+                            <div onclick="toggleDay(1)" id="day-1" class="day-toggle cursor-pointer bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-xl py-3">Mo</div>
+                            <div onclick="toggleDay(2)" id="day-2" class="day-toggle cursor-pointer bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-xl py-3">Tu</div>
+                            <div onclick="toggleDay(3)" id="day-3" class="day-toggle cursor-pointer bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-xl py-3">We</div>
+                            <div onclick="toggleDay(4)" id="day-4" class="day-toggle cursor-pointer bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-xl py-3">Th</div>
+                            <div onclick="toggleDay(5)" id="day-5" class="day-toggle cursor-pointer bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-xl py-3">Fr</div>
+                            <div onclick="toggleDay(6)" id="day-6" class="day-toggle cursor-pointer bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-xl py-3">Sa</div>
+                        </div>
+                        <p class="text-[10px] text-zinc-400 mt-2 text-center">Select the days you want to do this habit (e.g. Mo / We / Fr)</p>
+                    </div>
+
+                    <div id="flexible-picker" class="hidden">
+                        <label class="block text-sm font-medium text-zinc-400 mb-2">How many days per week?</label>
+                        <div id="target-buttons" class="flex gap-2 justify-center">
+                            <!-- Populated by JS -->
+                        </div>
+                        <p class="text-[10px] text-zinc-400 mt-2 text-center">You can do the habit on any days — only the total count matters</p>
+                    </div>
+                </div>
+                
+                <div class="flex gap-x-3">
+                    <button onclick="hideHabitModal()" 
+                            class="flex-1 py-4 text-zinc-400 font-medium rounded-2xl border border-zinc-700 hover:bg-zinc-800">Cancel</button>
+                    <button onclick="saveHabit()" 
+                            id="save-button"
+                            class="flex-1 py-4 bg-emerald-500 text-white font-semibold rounded-2xl hover:bg-emerald-600">Save Habit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HISTORY MODAL -->
+    <div id="history-modal" onclick="if(event.target===this)hideHistoryModal()" 
+         class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+        <div class="bg-zinc-900 rounded-3xl p-8 w-full max-w-4xl max-h-[90vh] overflow-hidden modal flex flex-col">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-semibold">History &amp; Streaks</h3>
+                <button onclick="hideHistoryModal()" class="text-zinc-400 hover:text-white text-2xl">✕</button>
+            </div>
+            
+            <div id="history-content" class="flex-1 overflow-auto space-y-8">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data model
+        let habits = []
+        let editingHabitId = null
+        
+        // Modal state
+        let tempFrequencyType = 'daily'
+        let tempScheduledDays = []
+        let tempFrequencyTarget = 3
+        
+        function getToday() { return new Date().toISOString().split('T')[0] }
+        function getDayOfWeek(dateStr) { return new Date(dateStr).getDay() }
+        function getLastNDays(n) {
+            const days = []; const today = new Date();
+            for (let i = n - 1; i >= 0; i--) {
+                const d = new Date(today); d.setDate(d.getDate() - i);
+                days.push(d.toISOString().split('T')[0]);
+            }
+            return days;
+        }
+        function getThisWeekDates() {
+            const today = new Date();
+            const startOfWeek = new Date(today); startOfWeek.setDate(today.getDate() - today.getDay());
+            const weekDates = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(startOfWeek); d.setDate(startOfWeek.getDate() + i);
+                weekDates.push(d.toISOString().split('T')[0]);
+            }
+            return weekDates;
+        }
+        
+        function calculateCurrentWeekProgress(habit) {
+            const weekDates = getThisWeekDates();
+            let completedThisWeek = weekDates.filter(date => habit.completedDates.includes(date)).length;
+            let targetThisWeek = habit.frequencyType === 'daily' ? 7 :
+                                 habit.frequencyType === 'scheduled' ? (habit.scheduledDays || []).length :
+                                 habit.frequencyTarget || 3;
+            return { completed: completedThisWeek, target: targetThisWeek };
+        }
+        
+        function calculateStreak(habit) {
+            if (!habit.completedDates?.length) return 0;
+            let streak = 0;
+            let currentDate = new Date(getToday());
+            while (true) {
+                const dateStr = currentDate.toISOString().split('T')[0];
+                if (habit.completedDates.includes(dateStr)) {
+                    streak++;
+                    currentDate.setDate(currentDate.getDate() - 1);
+                } else break;
+            }
+            return streak;
+        }
+        
+        function isDueToday(habit) {
+            if (!habit.frequencyType || habit.frequencyType === 'daily' || habit.frequencyType === 'flexible') return true;
+            return (habit.scheduledDays || []).includes(getDayOfWeek(getToday()));
+        }
+        
+        function isCompleted(habit, date) {
+            return habit.completedDates.includes(date);
+        }
+        
+        function loadHabits() {
+            const saved = localStorage.getItem('habits');
+            if (saved) {
+                habits = JSON.parse(saved);
+                habits.forEach(h => {
+                    if (!h.frequencyType) h.frequencyType = 'daily';
+                    if (h.frequencyType === 'flexible' && !h.frequencyTarget) h.frequencyTarget = 3;
+                });
+            } else habits = [];
+        }
+        
+        function saveHabits() {
+            localStorage.setItem('habits', JSON.stringify(habits));
+        }
+        
+        function renderStats() {
+            const today = getToday();
+            let completedToday = 0, totalDueToday = 0;
+            habits.forEach(h => {
+                if (isDueToday(h)) {
+                    totalDueToday++;
+                    if (isCompleted(h, today)) completedToday++;
+                }
+            });
+            const percentage = totalDueToday > 0 ? Math.round((completedToday / totalDueToday) * 100) : 0;
+            
+            const statsHTML = `
+                <div class="bg-zinc-900 rounded-3xl p-6 flex items-center justify-between">
+                    <div>
+                        <div class="text-emerald-400 text-sm font-medium">TODAY</div>
+                        <div class="text-5xl font-semibold">${completedToday}/${totalDueToday}</div>
+                        <div class="text-zinc-400">habits completed</div>
+                    </div>
+                    <div class="relative w-24 h-24 flex items-center justify-center">
+                        <svg class="w-24 h-24 -rotate-12" viewBox="0 0 42 42">
+                            <circle cx="21" cy="21" r="15" fill="none" stroke="#27272a" stroke-width="6"></circle>
+                            <circle cx="21" cy="21" r="15" fill="none" stroke="#10b981" stroke-width="6" stroke-dasharray="${percentage} 100" stroke-linecap="round"></circle>
+                        </svg>
+                        <div class="absolute text-center">
+                            <div class="text-3xl font-semibold">${percentage}%</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="flex items-center justify-end gap-x-1 text-emerald-400">
+                            <i class="fa-solid fa-fire"></i>
+                            <span class="font-semibold text-3xl">${habits.reduce((sum, h) => sum + calculateStreak(h), 0)}</span>
+                        </div>
+                        <div class="text-zinc-400 text-sm">total fire days</div>
+                    </div>
+                </div>
+                
+                <div class="bg-zinc-900 rounded-3xl p-6 text-center">
+                    <div class="text-zinc-400 text-sm mb-1">LONGEST STREAK</div>
+                    <div class="text-5xl font-semibold">${Math.max(...habits.map(h => calculateStreak(h)), 0)}</div>
+                    <div class="text-emerald-400 text-xs mt-1">🔥 days in a row</div>
+                </div>
+                
+                <div class="bg-zinc-900 rounded-3xl p-6">
+                    <div class="text-zinc-400 text-sm mb-3">THIS WEEK</div>
+                    <div class="flex gap-x-3">
+                        ${getLastNDays(7).map(date => {
+                            const count = habits.filter(h => isDueToday(h) && isCompleted(h, date)).length;
+                            return `<div class="flex-1 h-20 rounded-2xl flex items-end justify-center text-xs font-medium" style="background: linear-gradient(to top, #10b981 ${count > 0 ? '100%' : '20%'}, #27272a 100%)">${count}</div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+            document.getElementById('stats').innerHTML = statsHTML;
+        }
+        
+        function renderHabits() {
+            const container = document.getElementById('habits-container');
+            const empty = document.getElementById('empty-state');
+            
+            if (habits.length === 0) {
+                container.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+            
+            let html = '';
+            const last14Days = getLastNDays(14);
+            const today = getToday();
+            
+            habits.forEach(habit => {
+                const streak = calculateStreak(habit);
+                const dueToday = isDueToday(habit);
+                const doneToday = isCompleted(habit, today);
+                const weekProgress = calculateCurrentWeekProgress(habit);
+                
+                let scheduleLabel = '';
+                if (habit.frequencyType === 'scheduled') {
+                    const daysMap = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+                    scheduleLabel = habit.scheduledDays.sort((a,b)=>a-b).map(d => daysMap[d]).join(' / ');
+                } else if (habit.frequencyType === 'flexible') {
+                    scheduleLabel = `${habit.frequencyTarget} days / week`;
+                }
+                
+                // Always a clickable button for today toggle
+                const buttonHTML = dueToday ? `
+                    <button onclick="toggleToday('${habit.id}'); event.stopImmediatePropagation()" 
+                            class="flex-1 mb-4 flex items-center justify-center gap-x-3 ${doneToday ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-400' : 'bg-zinc-800 hover:bg-emerald-500 hover:text-white'} text-base font-medium rounded-2xl py-4 transition-all">
+                        ${doneToday ? 
+                            `<i class="fa-solid fa-check-circle text-xl"></i><span class="font-semibold">Done today ✓</span>` : 
+                            `<i class="fa-solid fa-circle-check text-xl"></i><span class="font-semibold">Mark as done today</span>`
+                        }
+                    </button>` : `
+                    <div class="flex-1 mb-4 flex items-center justify-center gap-x-3 bg-emerald-500/10 text-emerald-400 border border-emerald-400/30 text-base font-medium rounded-2xl py-4">
+                        <i class="fa-solid fa-leaf text-xl"></i>
+                        <span class="font-semibold">Not due today • ${weekProgress.completed}/${weekProgress.target}</span>
+                    </div>`;
+                
+                const heatmapHTML = last14Days.map(date => {
+                    const completed = isCompleted(habit, date);
+                    const isToday = date === today;
+                    const dueOnThisDay = habit.frequencyType === 'daily' || habit.frequencyType === 'flexible' || 
+                                       (habit.frequencyType === 'scheduled' && (habit.scheduledDays || []).includes(getDayOfWeek(date)));
+                    return `
+                        <div onclick="toggleDate('${habit.id}', '${date}'); event.stopImmediatePropagation()" 
+                             class="heatmap-dot ${completed ? 'bg-emerald-500 text-white' : dueOnThisDay ? 'bg-zinc-700 text-zinc-400 hover:bg-zinc-600' : 'bg-zinc-800 text-zinc-500'} ${isToday ? 'ring-2 ring-offset-2 ring-offset-zinc-950 ring-emerald-400' : ''}"
+                             title="${new Date(date).toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'})}">
+                            ${completed ? '✓' : ''}
+                        </div>`;
+                }).join('');
+                
+                html += `
+                <div class="habit-card bg-zinc-900 border border-zinc-800 rounded-3xl flex flex-col">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="text-2xl">${habit.name}</div>
+                        <div class="flex items-center gap-x-3">
+                            <button onclick="editHabit('${habit.id}'); event.stopImmediatePropagation()" class="text-emerald-400 hover:text-emerald-300">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button onclick="deleteHabit('${habit.id}'); event.stopImmediatePropagation()" class="text-zinc-400 hover:text-red-400">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    ${scheduleLabel ? `
+                    <div class="text-xs bg-zinc-800 text-emerald-400 px-3 py-1 rounded-2xl inline-flex items-center gap-x-1 mb-3 w-fit">
+                        <i class="fa-solid fa-calendar"></i> ${scheduleLabel}
+                    </div>` : ''}
+                    
+                    <div class="flex items-center gap-x-2 mb-4">
+                        <div class="text-3xl">🔥</div>
+                        <div>
+                            <span class="text-4xl font-semibold">${streak}</span>
+                            <span class="text-zinc-400 text-xs ml-1">day streak</span>
+                        </div>
+                    </div>
+                    
+                    ${buttonHTML}
+                    
+                    <div class="text-xs font-medium flex justify-between items-center mb-2">
+                        <span class="text-emerald-400">${weekProgress.completed} of ${weekProgress.target} this week</span>
+                        <span onclick="showHabitDetail('${habit.id}'); event.stopImmediatePropagation()" class="text-zinc-400 hover:text-emerald-400 cursor-pointer">full history →</span>
+                    </div>
+                    
+                    <div class="flex gap-x-1 justify-between">
+                        ${heatmapHTML}
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+        
+        function toggleToday(id) {
+            const habit = habits.find(h => h.id === id);
+            if (!habit || !isDueToday(habit)) return;
+            const today = getToday();
+            if (habit.completedDates.includes(today)) {
+                habit.completedDates = habit.completedDates.filter(d => d !== today);
+            } else {
+                habit.completedDates.push(today);
+                habit.completedDates.sort();
+            }
+            saveHabits();
+            renderAll();
+        }
+        
+        function toggleDate(id, date) {
+            const habit = habits.find(h => h.id === id);
+            if (!habit) return;
+            const due = habit.frequencyType === 'daily' || habit.frequencyType === 'flexible' ||
+                       (habit.frequencyType === 'scheduled' && (habit.scheduledDays || []).includes(getDayOfWeek(date)));
+            if (!due) return;
+            if (habit.completedDates.includes(date)) {
+                habit.completedDates = habit.completedDates.filter(d => d !== date);
+            } else {
+                habit.completedDates.push(date);
+                habit.completedDates.sort();
+            }
+            saveHabits();
+            renderAll();
+            if (!document.getElementById('history-modal').classList.contains('hidden')) showHabitDetail(id);
+        }
+        
+        function showAddModal() {
+            editingHabitId = null;
+            document.getElementById('modal-title').textContent = 'Create a new habit';
+            document.getElementById('save-button').textContent = 'Create Habit';
+            document.getElementById('habit-name-input').value = '';
+            tempFrequencyType = 'daily';
+            tempScheduledDays = [];
+            tempFrequencyTarget = 3;
+            setFrequencyType('daily');
+            document.getElementById('habit-modal').classList.remove('hidden');
+            document.getElementById('habit-name-input').focus();
+        }
+        
+        function editHabit(id) {
+            const habit = habits.find(h => h.id === id);
+            if (!habit) return;
+            editingHabitId = id;
+            document.getElementById('modal-title').textContent = 'Edit habit';
+            document.getElementById('save-button').textContent = 'Save Changes';
+            document.getElementById('habit-name-input').value = habit.name;
+            tempFrequencyType = habit.frequencyType || 'daily';
+            tempScheduledDays = habit.frequencyType === 'scheduled' ? [...(habit.scheduledDays || [])] : [];
+            tempFrequencyTarget = habit.frequencyType === 'flexible' ? (habit.frequencyTarget || 3) : 3;
+            setFrequencyType(tempFrequencyType);
+            document.getElementById('habit-modal').classList.remove('hidden');
+        }
+        
+        function saveHabit() {
+            const name = document.getElementById('habit-name-input').value.trim();
+            if (!name) return alert("Please enter a habit name");
+            if (tempFrequencyType === 'scheduled' && tempScheduledDays.length === 0) return alert("Please select at least one day");
+            
+            if (editingHabitId) {
+                const habit = habits.find(h => h.id === editingHabitId);
+                if (habit) {
+                    habit.name = name;
+                    habit.frequencyType = tempFrequencyType;
+                    if (tempFrequencyType === 'scheduled') habit.scheduledDays = [...tempScheduledDays];
+                    else if (tempFrequencyType === 'flexible') habit.frequencyTarget = tempFrequencyTarget;
+                    else habit.scheduledDays = [0,1,2,3,4,5,6];
+                }
+            } else {
+                const newHabit = { id: 'habit-' + Date.now(), name, completedDates: [], frequencyType: tempFrequencyType };
+                if (tempFrequencyType === 'scheduled') newHabit.scheduledDays = [...tempScheduledDays];
+                else if (tempFrequencyType === 'flexible') newHabit.frequencyTarget = tempFrequencyTarget;
+                else newHabit.scheduledDays = [0,1,2,3,4,5,6];
+                habits.unshift(newHabit);
+            }
+            saveHabits();
+            hideHabitModal();
+            renderAll();
+        }
+        
+        function hideHabitModal() {
+            document.getElementById('habit-modal').classList.add('hidden');
+            editingHabitId = null;
+        }
+        
+        function setFrequencyType(type) {
+            tempFrequencyType = type;
+            const dailyBtn = document.getElementById('freq-daily');
+            const scheduledBtn = document.getElementById('freq-scheduled');
+            const flexibleBtn = document.getElementById('freq-flexible');
+            
+            dailyBtn.classList.toggle('border-emerald-500', type === 'daily');
+            dailyBtn.classList.toggle('text-emerald-500', type === 'daily');
+            scheduledBtn.classList.toggle('border-emerald-500', type === 'scheduled');
+            scheduledBtn.classList.toggle('text-emerald-500', type === 'scheduled');
+            flexibleBtn.classList.toggle('border-emerald-500', type === 'flexible');
+            flexibleBtn.classList.toggle('text-emerald-500', type === 'flexible');
+            
+            document.getElementById('daily-desc').classList.toggle('hidden', type !== 'daily');
+            document.getElementById('scheduled-picker').classList.toggle('hidden', type !== 'scheduled');
+            document.getElementById('flexible-picker').classList.toggle('hidden', type !== 'flexible');
+            
+            if (type === 'flexible') renderTargetButtons();
+        }
+        
+        function renderTargetButtons() {
+            const container = document.getElementById('target-buttons');
+            container.innerHTML = '';
+            for (let i = 1; i <= 7; i++) {
+                const btn = document.createElement('button');
+                btn.className = `target-btn w-10 h-10 flex items-center justify-center rounded-2xl border text-sm font-medium ${i === tempFrequencyTarget ? 'active' : 'border-zinc-700'}`;
+                btn.textContent = i;
+                btn.onclick = () => { tempFrequencyTarget = i; renderTargetButtons(); };
+                container.appendChild(btn);
+            }
+        }
+        
+        function toggleDay(dayNum) {
+            const el = document.getElementById('day-' + dayNum);
+            if (tempScheduledDays.includes(dayNum)) {
+                tempScheduledDays = tempScheduledDays.filter(d => d !== dayNum);
+                el.classList.remove('active');
+            } else {
+                tempScheduledDays.push(dayNum);
+                el.classList.add('active');
+            }
+        }
+        
+        function deleteHabit(id) {
+            if (!confirm('Delete this habit permanently?')) return;
+            habits = habits.filter(h => h.id !== id);
+            saveHabits();
+            renderAll();
+        }
+        
+        function clearAllData() {
+            if (confirm('This will delete ALL habits and history. Are you sure?')) {
+                localStorage.removeItem('habits');
+                habits = [];
+                renderAll();
+            }
+        }
+        
+        function showHistoryModal() {
+            const modal = document.getElementById('history-modal');
+            const content = document.getElementById('history-content');
+            if (habits.length === 0) {
+                content.innerHTML = `<div class="text-center py-12"><div class="text-6xl mb-4">📅</div><p class="text-zinc-400">No habits yet. Add some to see your history!</p></div>`;
+                modal.classList.remove('hidden');
+                return;
+            }
+            let html = `<div class="grid grid-cols-1 gap-8">`;
+            habits.forEach(h => {
+                const streak = calculateStreak(h);
+                const weekProgress = calculateCurrentWeekProgress(h);
+                const last30 = getLastNDays(30);
+                let heatmap = last30.map(date => {
+                    const done = isCompleted(h, date);
+                    return `<div onclick="toggleDate('${h.id}', '${date}'); showHabitDetail('${h.id}')" class="heatmap-dot text-xs ${done ? 'bg-emerald-500 text-white shadow-inner' : 'bg-zinc-800 hover:bg-zinc-700'}">${done ? '✓' : ''}</div>`;
+                }).join('');
+                html += `
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-x-3">
+                            <span class="text-2xl">${h.name}</span>
+                            <span class="text-emerald-400 font-medium text-sm flex items-center gap-x-1"><i class="fa-solid fa-fire"></i> ${streak}</span>
+                        </div>
+                        <div class="text-emerald-400 text-sm">${weekProgress.completed}/${weekProgress.target} this week</div>
+                    </div>
+                    <div class="flex gap-x-px flex-wrap gap-y-2">${heatmap}</div>
+                </div>`;
+            });
+            html += '</div>';
+            content.innerHTML = html;
+            modal.classList.remove('hidden');
+        }
+        
+        function hideHistoryModal() {
+            document.getElementById('history-modal').classList.add('hidden');
+        }
+        
+        function showHabitDetail(id) {
+            const habit = habits.find(h => h.id === id);
+            if (!habit) return;
+            const modal = document.getElementById('history-modal');
+            const content = document.getElementById('history-content');
+            const last60 = getLastNDays(60);
+            const weekProgress = calculateCurrentWeekProgress(habit);
+            let listHTML = `
+                <div class="text-xl font-medium mb-4 flex items-center gap-x-3">
+                    <span>${habit.name}</span>
+                    <span class="text-emerald-400">🔥 ${calculateStreak(habit)} day streak</span>
+                    <span class="text-emerald-400">${weekProgress.completed}/${weekProgress.target} this week</span>
+                </div>
+                <div class="max-h-96 overflow-auto rounded-2xl border border-zinc-700 divide-y divide-zinc-700">`;
+            last60.forEach(date => {
+                const done = isCompleted(habit, date);
+                const due = habit.frequencyType === 'daily' || habit.frequencyType === 'flexible' || 
+                           (habit.frequencyType === 'scheduled' && (habit.scheduledDays || []).includes(getDayOfWeek(date)));
+                const displayDate = new Date(date).toLocaleDateString('en-US', {weekday: 'short', month: 'short', day: 'numeric'});
+                listHTML += `
+                <div onclick="toggleDate('${habit.id}', '${date}'); showHabitDetail('${habit.id}')" 
+                     class="px-6 py-4 flex items-center justify-between hover:bg-zinc-800 cursor-pointer ${due ? '' : 'opacity-40'}">
+                    <div class="flex items-center gap-x-4">
+                        <span class="text-sm font-medium text-zinc-300 w-24">${displayDate}</span>
+                        ${due ? (done ? 
+                            `<span class="inline-flex items-center bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-2xl text-xs font-medium"><i class="fa-solid fa-check mr-1"></i> Completed</span>` : 
+                            `<span class="text-zinc-400 text-xs">Due</span>`) : 
+                            `<span class="text-zinc-500 text-xs">Off day</span>`}
+                    </div>
+                    <div class="text-2xl">${done ? '✅' : due ? '○' : '–'}</div>
+                </div>`;
+            });
+            listHTML += `</div>`;
+            content.innerHTML = listHTML;
+            modal.classList.remove('hidden');
+        }
+        
+        function renderAll() {
+            loadHabits();
+            renderStats();
+            renderHabits();
+        }
+        
+        window.onload = function() {
+            renderAll();
+            const dateEl = document.getElementById('date-text');
+            const now = new Date();
+            dateEl.textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+            console.log('%c✅ HabitFlow updated — compact cards + you can now un-check "Done today" ✅', 'color:#10b981; font-family:monospace');
+        };
+    </script>
+	    <!-- PWA Service Worker (offline support) -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('data:application/javascript,' + encodeURIComponent(`
+                self.addEventListener('install', e => e.waitUntil(self.skipWaiting()));
+                self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+                self.addEventListener('fetch', e => {
+                    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+                });
+            `)).catch(console.error);
+        }
+    </script>
+</body>
+</html>
