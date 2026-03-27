@@ -81,16 +81,17 @@
     </style>
 </head>
 <body class="bg-zinc-950 text-zinc-100 min-h-screen">
-    <!-- HEADER -->
-    <div class="max-w-5xl mx-auto px-4 py-6 md:px-6 md:py-8">
-        <div class="flex items-center justify-between mb-8">
+    <!-- HEADER - MOBILE-FRIENDLY VERSION -->
+    <div class="max-w-5xl mx-auto px-4 py-4 md:px-6 md:py-8">
+        <div class="flex items-center justify-between">
             <div class="flex items-center gap-x-3">
                 <div class="w-9 h-9 bg-emerald-500 rounded-2xl flex items-center justify-center text-white text-2xl shadow-inner">🔥</div>
-                <h1 class="text-4xl font-semibold tracking-tight">HabitFlow</h1>
+                <h1 class="text-3xl md:text-4xl font-semibold tracking-tight">HabitFlow</h1>
             </div>
             
-            <div class="flex items-center gap-x-4">
-                <div id="today-date" class="text-sm font-medium bg-zinc-900 text-zinc-400 px-5 py-2.5 rounded-3xl flex items-center gap-x-2">
+            <div class="flex items-center gap-x-3">
+                <!-- Date pill - smaller on mobile -->
+                <div id="today-date" class="text-xs md:text-sm font-medium bg-zinc-900 text-zinc-400 px-4 py-2 rounded-3xl flex items-center gap-x-2">
                     <i class="fa-solid fa-calendar"></i>
                     <span id="date-text"></span>
                 </div>
@@ -98,16 +99,18 @@
                 <button onclick="clearAllData()" 
                         class="flex items-center gap-x-2 text-zinc-400 hover:text-red-400 transition-colors text-sm font-medium">
                     <i class="fa-solid fa-trash"></i>
-                    <span>Reset</span>
+                    <span class="hidden md:inline">Reset</span>
                 </button>
                 
+                <!-- New Habit button - icon only on mobile -->
                 <button onclick="showAddModal()" 
-                        class="flex items-center gap-x-3 bg-emerald-500 hover:bg-emerald-600 transition-colors text-white font-semibold px-6 py-3 rounded-3xl shadow-lg shadow-emerald-500/30">
-                    <i class="fa-solid fa-plus"></i>
-                    <span>New Habit</span>
+                        class="flex items-center justify-center bg-emerald-500 hover:bg-emerald-600 transition-colors text-white font-semibold w-10 h-10 md:w-auto md:px-6 md:py-3 md:rounded-3xl rounded-2xl shadow-lg shadow-emerald-500/30">
+                    <i class="fa-solid fa-plus text-xl md:mr-2"></i>
+                    <span class="hidden md:inline">New Habit</span>
                 </button>
             </div>
         </div>
+    </div>
 
         <!-- STATS BAR -->
         <div class="grid grid-cols-3 gap-4 mb-10" id="stats">
